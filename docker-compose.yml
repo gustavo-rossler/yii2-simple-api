@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+
+  php:
+    container_name: yii2-php
+    build:
+      context: .
+      dockerfile: php.dockerfile
+    volumes:
+      - ./src:/var/www/html
+      - /var/www/html/vendor
+    depends_on:
+      - db
+    ports:
+      - 8084:8080
+      - 8085:80
+
+  db:
+    container_name: yii2-db
+    image: mysql:8
+    environment:
+      - MYSQL_ROOT_PASSWORD=db
+      - MYSQL_USER=db
+      - MYSQL_PASSWORD=db
+    volumes:
+      - db-data:/var/lib/mysql
+  
+  nginx-php:
+    build:
+      context: .
+      dockerfile: ./nginx.dockerfile
+    depends_on:
+      - php
+      - db
+    container_name: yii2-nginx
+    ports:
+      - 8082:80
+      - 8083:443
+    volumes:
+      - ./src:/var/www/html
+
+volumes:
+  db-data:
