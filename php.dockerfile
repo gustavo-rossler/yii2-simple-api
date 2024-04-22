@@ -18,4 +18,4 @@ COPY --from=composer:1.10 /usr/bin/composer /usr/bin/composer
 COPY ./src/ .
 
 # INSTALL YOUR DEPENDENCIES
-RUN composer create-project --prefer-dist yiisoft/yii2-app-basic basico
+RUN composer install

@@ -1,4 +1,4 @@
-version: '3.8'
+version: '3.9'
 
 services:
 
@@ -11,7 +11,8 @@ services:
       - ./src:/var/www/html
       - /var/www/html/vendor
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     ports:
       - 8084:8080
       - 8085:80
@@ -25,20 +26,48 @@ services:
       - MYSQL_PASSWORD=db
     volumes:
       - db-data:/var/lib/mysql
-  
+      - ./schema.sql:/docker-entrypoint-initdb.d/0_init.sql
+    ports:
+      - 8086:3306
+    entrypoint:
+      [
+        'docker-entrypoint.sh',
+        '--default-authentication-plugin=mysql_native_password'
+      ]
+    healthcheck:
+      test: [ "CMD", "mysqladmin", "ping", "-h", "localhost" ]
+      timeout: 20s
+      retries: 10
+
   nginx-php:
     build:
       context: .
       dockerfile: ./nginx.dockerfile
     depends_on:
       - php
-      - db
     container_name: yii2-nginx
     ports:
       - 8082:80
       - 8083:443
     volumes:
       - ./src:/var/www/html
+
+  php-initializer:
+    container_name: yii2-php-initializer
+    build:
+      context: .
+      dockerfile: php.dockerfile
+    working_dir: /var/www/html
+    volumes:
+      - ./src:/var/www/html
+    entrypoint: [ 'php', 'yii' ]
+    command: >
+      migrate --interactive=0
+    depends_on:
+      db:
+        condition: service_healthy
+      php:
+        condition: service_started
 
 volumes:
   db-data:
